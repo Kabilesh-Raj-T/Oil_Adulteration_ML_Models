@@ -6,7 +6,7 @@ import os
 # ==============================
 # CONFIG
 # ==============================
-BASE_DIR = r"D:\Oil_Adulteration_Models"  # Root folder containing oil folders
+BASE_DIR = os.path.dirname(__file__)  # Relative path to repo folder
 
 st.set_page_config(page_title="Oil Adulteration Predictor", layout="centered")
 st.title("🧪 Edible Oil Adulteration Prediction")
@@ -26,7 +26,7 @@ feature_dict = {
 }
 
 # ==============================
-# Select oil type (only folders with .joblib models)
+# Detect oil folders with models
 # ==============================
 oil_types = [
     d for d in os.listdir(BASE_DIR)
@@ -36,7 +36,7 @@ oil_types = [
 ]
 
 if not oil_types:
-    st.error("⚠️ No oil folders with models found in the base directory.")
+    st.error("⚠️ No oil folders with models found in the repo.")
     st.stop()
 
 selected_oil = st.selectbox("🛢️ Select Oil Type:", oil_types)
@@ -47,7 +47,7 @@ selected_oil = st.selectbox("🛢️ Select Oil Type:", oil_types)
 model_dir = os.path.join(BASE_DIR, selected_oil)
 all_model_files = [f for f in os.listdir(model_dir) if f.endswith(".joblib")]
 
-# Attempt to pre-load each model and only include loadable ones
+# Pre-load only models that can be loaded successfully
 loadable_models = []
 for f in all_model_files:
     try:
