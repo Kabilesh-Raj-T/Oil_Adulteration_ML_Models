@@ -6,8 +6,8 @@ import os
 # ==============================
 # CONFIG
 # ==============================
-# Use relative path (current repo folder) instead of local Windows path
-BASE_DIR = os.path.dirname(__file__)
+# Use current working directory to ensure it works on Streamlit Cloud
+BASE_DIR = os.getcwd()
 
 st.set_page_config(page_title="Oil Adulteration Predictor", layout="centered")
 st.title("🧪 Edible Oil Adulteration Prediction")
@@ -27,11 +27,11 @@ feature_dict = {
 }
 
 # ==============================
-# Select oil type (only folders with .joblib models)
+# Detect oil folders with models
 # ==============================
 oil_types = [
     d for d in os.listdir(BASE_DIR)
-    if os.path.isdir(os.path.join(BASE_DIR, d)) 
+    if os.path.isdir(os.path.join(BASE_DIR, d))
        and any(f.endswith(".joblib") for f in os.listdir(os.path.join(BASE_DIR, d)))
        and not d.startswith(".")
 ]
