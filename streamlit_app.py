@@ -28,7 +28,8 @@ feature_dict = {
         "A-B ORL", "Total ORL", "Total loss(dB)", "IOR"
     ],
     "Gingelly Oil": [
-        "Reflectance", "Attenuation", "ORL", "IOR"
+        "Reflectance", "Attenuation", "4pt Loss (db)", "A-B Loss (db)",
+        "A-B ORL (db)", "Total ORL (db)", "IOR"
     ],
     "Mustard Oil": [
         "Reflectance", "Attenuation", "4pt Loss (db)", "A-B Loss (db)",
