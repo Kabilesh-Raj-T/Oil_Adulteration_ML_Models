@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 import joblib
 import numpy as np
 import os
@@ -12,7 +12,8 @@ st.set_page_config(page_title="Oil Adulteration Predictor", layout="centered")
 st.title("🧪 Edible Oil Adulteration Prediction")
 st.markdown("""
 Predict the purity or quality of edible oils using pre-trained ML models.  
-Select an oil, choose a model, and enter the feature values manually.
+Select an oil, choose a model, and enter the feature values manually.  
+**IOR will be calculated automatically from Reflectance.**
 """)
 
 # ==============================
@@ -83,7 +84,7 @@ model = joblib.load(model_path)
 
 st.success(f"✅ Loaded model: {selected_display_name}")
 
-# If any models failed to load, show in debug mode
+# Show model load issues (optional)
 if failed_models:
     with st.expander("⚠️ Some models could not be loaded (click for details)"):
         for f, err in failed_models:
@@ -94,29 +95,47 @@ if failed_models:
 # ==============================
 st.subheader("🔢 Enter Feature Values")
 
-feature_names = feature_dict.get(selected_oil)
+feature_names = feature_dict.get(selected_oil, [])
 if not feature_names:
-    st.warning(f"No predefined features for {selected_oil}. Using default generic inputs.")
+    st.warning(f"No predefined features for {selected_oil}. Using generic inputs.")
     feature_names = [f"Feature {i+1}" for i in range(7)]
 
-inputs = []
+inputs = {}
 cols = st.columns(2)
+
+# Collect feature inputs (skip IOR)
 for i, feature in enumerate(feature_names):
+    if feature.upper().startswith("IOR"):
+        continue
     with cols[i % 2]:
         val_str = st.text_input(f"{feature}", value="0.0")
         try:
-            val = float(val_str)
+            inputs[feature] = float(val_str)
         except ValueError:
-            val = 0.0
-        inputs.append(val)
+            inputs[feature] = 0.0
+
+# Automatically calculate IOR using Reflectance
+if "Reflectance" in inputs:
+    R = inputs["Reflectance"]
+    try:
+        IOR = 1.4683 * ((1 - 10 ** (-R / 20)) / (1 + 10 ** (-R / 20)))
+    except Exception:
+        IOR = 0.0
+else:
+    IOR = 0.0
+
+inputs["IOR"] = IOR
+st.info(f"🔹 Automatically calculated IOR = **{IOR:.4f}**")
 
 # ==============================
 # PREDICT BUTTON
 # ==============================
 if st.button("🔮 Predict"):
     try:
-        X_input = np.array(inputs).reshape(1, -1)
-        n_model_features = getattr(model, "n_features_in_", len(inputs))
+        feature_order = feature_dict.get(selected_oil, list(inputs.keys()))
+        X_input = np.array([inputs[f] for f in feature_order]).reshape(1, -1)
+        n_model_features = getattr(model, "n_features_in_", X_input.shape[1])
+
         if X_input.shape[1] != n_model_features:
             st.error(f"❌ Number of inputs ({X_input.shape[1]}) does not match model requirement ({n_model_features}).")
         else:
@@ -131,4 +150,4 @@ if st.button("🔮 Predict"):
 # FOOTER
 # ==============================
 st.markdown("---")
-st.caption("Developed by Kabilesh Raj — Powered by Streamlit & scikit-learn")
+st.caption("Developed by T Kabilesh Raj — Powered by Streamlit & scikit-learn")
