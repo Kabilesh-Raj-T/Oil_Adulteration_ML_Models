@@ -1,4 +1,4 @@
-import streamlit as st 
+import streamlit as st
 import joblib
 import numpy as np
 import os
@@ -9,11 +9,11 @@ import os
 BASE_DIR = os.getcwd()
 st.set_page_config(page_title="Oil Adulteration Predictor", layout="centered")
 
-st.title("🧪 Edible Oil Adulteration Prediction")
+st.title("Edible Oil Adulteration Prediction")
 st.markdown("""
-Predict the purity or quality of edible oils using pre-trained ML models.  
-Select an oil, choose a model, and enter the feature values manually.  
-**IOR will be calculated automatically from Reflectance.**
+Predict the purity or quality of edible oils using pre-trained machine learning models.  
+Select an oil type, choose a model, and enter the feature values manually.  
+The Index of Refraction (IOR) will be calculated automatically from Reflectance.
 """)
 
 # ==============================
@@ -49,10 +49,10 @@ oil_types = [
 ]
 
 if not oil_types:
-    st.error("⚠️ No oil folders with models found in the base directory.")
+    st.error("No oil folders with models found in the base directory.")
     st.stop()
 
-selected_oil = st.selectbox("🛢️ Select Oil Type:", oil_types)
+selected_oil = st.selectbox("Select Oil Type:", sorted(oil_types))
 
 # ==============================
 # DETECT AND LOAD MODELS
@@ -73,27 +73,27 @@ if not loadable_models:
     st.error(f"No valid .joblib models found for {selected_oil}.")
     st.stop()
 
-# Create pretty display names
-model_display_names = [os.path.splitext(f)[0].replace("_", " ") for f in loadable_models]
-selected_display_name = st.selectbox("🤖 Select Model:", model_display_names)
+# Create title-cased display names
+model_display_names = [os.path.splitext(f)[0].replace("_", " ").title() for f in loadable_models]
+selected_display_name = st.selectbox("Select Model:", model_display_names)
 
 # Map back to file
 selected_model_file = loadable_models[model_display_names.index(selected_display_name)]
 model_path = os.path.join(model_dir, selected_model_file)
 model = joblib.load(model_path)
 
-st.success(f"✅ Loaded model: {selected_display_name}")
+st.success(f"Loaded model: {selected_display_name}")
 
-# Show model load issues (optional)
+# If any models failed to load, show details
 if failed_models:
-    with st.expander("⚠️ Some models could not be loaded (click for details)"):
+    with st.expander("Some models could not be loaded (details)"):
         for f, err in failed_models:
-            st.write(f"❌ **{f}** — {err}")
+            st.write(f"File: {f} — Error: {err}")
 
 # ==============================
 # FEATURE INPUT SECTION
 # ==============================
-st.subheader("🔢 Enter Feature Values")
+st.subheader("Enter Feature Values")
 
 feature_names = feature_dict.get(selected_oil, [])
 if not feature_names:
@@ -108,11 +108,8 @@ for i, feature in enumerate(feature_names):
     if feature.upper().startswith("IOR"):
         continue
     with cols[i % 2]:
-        val_str = st.text_input(f"{feature}", value="0.0")
-        try:
-            inputs[feature] = float(val_str)
-        except ValueError:
-            inputs[feature] = 0.0
+        val = st.number_input(f"{feature}", value=0.0, format="%.4f")
+        inputs[feature] = float(val)
 
 # Automatically calculate IOR using Reflectance
 if "Reflectance" in inputs:
@@ -125,24 +122,23 @@ else:
     IOR = 0.0
 
 inputs["IOR"] = IOR
-st.info(f"🔹 Automatically calculated IOR = **{IOR:.4f}**")
+st.info(f"Automatically calculated IOR = {IOR:.4f}")
 
 # ==============================
 # PREDICT BUTTON
 # ==============================
-if st.button("🔮 Predict"):
+if st.button("Predict"):
     try:
         feature_order = feature_dict.get(selected_oil, list(inputs.keys()))
         X_input = np.array([inputs[f] for f in feature_order]).reshape(1, -1)
         n_model_features = getattr(model, "n_features_in_", X_input.shape[1])
 
         if X_input.shape[1] != n_model_features:
-            st.error(f"❌ Number of inputs ({X_input.shape[1]}) does not match model requirement ({n_model_features}).")
+            st.error(f"Number of inputs ({X_input.shape[1]}) does not match model requirement ({n_model_features}).")
         else:
             prediction = model.predict(X_input)
             prediction_clipped = np.clip(prediction, 2, 20)
-            st.success(f"**Predicted {selected_oil} value:** {prediction_clipped[0]:.3f}")
-            st.balloons()
+            st.success(f"Predicted {selected_oil} value: {prediction_clipped[0]:.3f}")
     except Exception as e:
         st.error(f"Prediction failed: {e}")
 
@@ -150,4 +146,4 @@ if st.button("🔮 Predict"):
 # FOOTER
 # ==============================
 st.markdown("---")
-st.caption("Developed by T Kabilesh Raj — Powered by Streamlit & scikit-learn")
+st.caption("Developed by T Kabilesh Raj — Powered by Streamlit and scikit-learn")
